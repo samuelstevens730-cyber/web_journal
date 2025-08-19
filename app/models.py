@@ -5,16 +5,16 @@ Defines database tables and relationships.
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from .database import Base
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Text, String, Integer, DateTime, func
+from . database import Base
 
 class Entry(Base):
-    __tablename__="entries"
+    __tablename__ = "entries"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True, nullable=False)
-    content_md = Column(Text, nullable=False)
-    content_html = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    content_md: Mapped[str] = mapped_column(Text, nullable=False)
+    content_html: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

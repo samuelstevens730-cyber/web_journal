@@ -17,9 +17,16 @@ class EntryRead(BaseModel):
     title: str
     content_md: str
     content_html: str
-
-class Config:
+    class Config:
     #Tell pydantic it can read attributes from ORM objects
     # (e.g. a SQLAlchemy Entry instance) not just plain dicts
-    from_attributes = True
+        from_attributes = True
+# PATCH: partial update (both fields optional)
+class EntryUpdate(BaseModel):
+    title: str | None = None
+    content_md: str | None = None
 
+# PUT: full replace (both fields required)
+class EntryPut(BaseModel):
+    title: str
+    content_md: str
