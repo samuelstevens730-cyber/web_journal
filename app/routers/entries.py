@@ -4,11 +4,12 @@ FastAPI router for journal entry endpoints.
 Defines HTTP routes for creating and retrieving entries.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Form
+from fastapi import APIRouter, Response, status, HTTPException, Depends, Form
 from sqlalchemy.orm import Session
 from .. import schemas
 from ..database import get_db
 from .. import crud
+from fastapi.responses import RedirectResponse
 
 router = APIRouter(prefix="/entries", tags=["entries"])
 
@@ -43,3 +44,36 @@ def patch_entry(
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found.")
     return entry
+
+@router.get("", response_model=list[schemas.EntryRead])
+def list_entries(
+    limit: int = 20,
+    offset: int = 0, 
+    db: Session = Depends(get_db)):
+    """
+    List entries newest first with basic pagination (JSON).
+    """
+    items = crud.get_entries(db, limit=limit, offset=offset)
+    return items
+
+@router.delete("/{id}")
+def delete_entry_json(
+    id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = crud.delete_entry(db, id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.post("/{id}/delete")
+def delete_entry_form(
+    id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = crud.delete_entry(db, id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Entry not found.")
+    # Temporary target until we ship templates and GET "/"
+    return RedirectResponse(url="/entries", status_code=status.HTTP_303_SEE_OTHER)
+

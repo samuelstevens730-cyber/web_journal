@@ -69,3 +69,36 @@ def update_entry(
         db.refresh(entry)
 
     return entry
+
+def get_entries(db, limit: int=20, offset: int = 0) -> list[models.Entry]:
+    """
+    Return a page of entries ordered newest-first.
+    
+    - Uses created_at DESC so recent entries show first.
+    - Applies offset/limit for pagination.
+    - Returns ORM rows; Fast API will serialize via EntryRead (from_attributes)
+    """
+    entries = (
+        db.query(models.Entry)
+        .order_by(models.Entry.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return entries
+
+def delete_entry(db: Session, entry_id: int) -> bool:
+    """ 
+    Delete an entry by primary key.
+    
+    Returns:
+        True -> row deleted and committed
+        False -> no such row
+    """
+    entry = db.get(models.Entry, entry_id)
+    if entry is None:
+        return False
+    
+    db.delete(entry)
+    db.commit()
+    return True
