@@ -38,20 +38,34 @@ def update_entry(
     if entry is None:
         return None
 
-    # PUT = full replace
-    if isinstance(data, schemas.EntryPut):
-        entry.title = data.title
-        entry.content_md = data.content_md
-        entry.content_html = data.content_md #mirror for now
-    else:
-        # PATCH = full replace
-        if data.title is not None:
-            entry.title = data.title
-        if data.content_md is not None:
-            entry.content_md = data.content_md
-            entry.content_html = data.content_md #mirror for now
+    changed = False
 
-    db.add(entry)
-    db.commit() 
-    db.refresh(entry)
-    return entry          
+    # PUT = full replace (both fields required)
+    if isinstance(data, schemas.EntryPut):
+        if entry.title != data.title:
+            entry.title = data.title
+            changed = True
+
+        if entry.content_md != data.content_md:
+            entry.content_md = data.content_md
+            entry.content_html = render_md_to_safe_html(data.content_md)  # Markdown → safe HTML
+            changed = True
+
+    # PATCH = partial update (only provided fields)
+    else:
+        if data.title is not None and data.title != entry.title:
+            entry.title = data.title
+            changed = True
+
+        if data.content_md is not None and data.content_md != entry.content_md:
+            entry.content_md = data.content_md
+            entry.content_html = render_md_to_safe_html(data.content_md)  # Markdown → safe HTML
+            changed = True
+
+    if changed:
+        entry.updated_at = datetime.utcnow()  # v0 convention: naive UTC
+        db.add(entry)
+        db.commit()
+        db.refresh(entry)
+
+    return entry
