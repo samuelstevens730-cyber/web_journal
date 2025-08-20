@@ -102,3 +102,34 @@ def delete_entry(db: Session, entry_id: int) -> bool:
     db.delete(entry)
     db.commit()
     return True
+
+def search_entries(
+        db: Session,
+        q: str,
+        limit: int = 20,
+        offset: int = 0
+) -> list[models.Entry]:
+    q = q.strip()
+    if not q:
+        return []
+    def _escape_like(s: str) -> str:
+        # order matters: escape backslash first so we don't double-escape.
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    escaped = _escape_like(q)
+    term = f"%{escaped}%"
+    entries = (
+        db.query(models.Entry)
+        .filter(
+            models.Entry.title.like(term, escape="\\")
+            | models.Entry.content_md.like(term, escape="\\")
+        )
+        .order_by(models.Entry.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return entries
+
+
+    
+    

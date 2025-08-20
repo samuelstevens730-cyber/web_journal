@@ -23,6 +23,22 @@ def create_entry_endpoint(
     entry = crud.create_entry(db, data)
     return entry
 
+# Must stay above @router.get("/id...") or search functino will return "search parsed as int"
+@router.get("/search", response_model=list[schemas.EntryRead])
+def search_entries(
+    q: str = "",
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    """
+    Search entries by title or Markdown (LIKE), newest-first.
+    """
+    if not q.strip():
+        return []
+    results = crud.search_entries(db, q, limit=limit, offset=offset)
+    return results
+
 @router.get("/{id}", response_model=schemas.EntryRead)
 def read_entry_endpoint(id: int, db: Session = Depends(get_db)):
     entry = crud.get_entry(db, id)
@@ -76,4 +92,5 @@ def delete_entry_form(
         raise HTTPException(status_code=404, detail="Entry not found.")
     # Temporary target until we ship templates and GET "/"
     return RedirectResponse(url="/entries", status_code=status.HTTP_303_SEE_OTHER)
+
 
